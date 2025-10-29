@@ -34,20 +34,19 @@ def train_logit_model(df):
         raise ValueError(f"Missing required feature columns in CSV: {missing}")
 
     X = df[features].copy()
-    # create nulliparous as you did originally
-    X["nulliparous"] = ((X["priorlive"] == 0) & (X["priordead"] == 0) & (X["priorterm"] == 0)).astype(int)
-    y = df["csection"].astype(int)
+# --- 4. Logistic Regression with statsmodels
+# Using only nulliparous (drop priorlive/priordead/priorterm to avoid collinearity)
+X = df[["nulliparous", "gestrec3", "dplural", "me_pres"]]
+y = df["csection"]
 
-    # Add constant for intercept
-    X_sm = sm.add_constant(X, has_constant="add")
-    logit = sm.Logit(y, X_sm)
-    # fit the model (suppress output)
-    try:
-        results = logit.fit(disp=False, maxiter=100)
-    except Exception:
-        # fallback: try default fit if options differ on versions
-        results = logit.fit()
-    return results
+X_sm = sm.add_constant(X)   # add intercept
+model = sm.Logit(y, X_sm)
+results = model.fit()
+
+# Save model for Streamlit to load
+results.save("csection_logit_model.sm")
+
+st.write("Model trained successfully!")
 
 # ---------------------------
 # Main app
